@@ -48,7 +48,8 @@ type ParseList = {
 	[string]: (any) -> any,
 }
 
-function Remote.new(object: RemoteEvent, ToServer: boolean, ParseList: ParseList)
+function Remote.new(object: RemoteEvent|RemoteFunction, ToServer: boolean, ParseList: ParseList?)
+	
 	local NewRemote = {}
 
 	--Firing Methods
@@ -63,7 +64,6 @@ function Remote.new(object: RemoteEvent, ToServer: boolean, ParseList: ParseList
 			setmetatable(NewRemote, ServerSender)
 			NewRemote._object = object
 		end
-		print(NewRemote)
 		return NewRemote
 	end
 
@@ -71,12 +71,24 @@ function Remote.new(object: RemoteEvent, ToServer: boolean, ParseList: ParseList
 	NewRemote._RemoteConnections = {}
 	setmetatable(NewRemote, Receiver)
 
-	object.OnClientEvent:Connect(function(...)
-		for _, callback in NewRemote._RemoteConnections do
-			callback(...)
-		end
-	end)
-	print(NewRemote)
+	if object.ClassName == "RemoteEvent" then
+		local event = object::RemoteEvent
+		event.OnClientEvent:Connect(function(...)
+			for _, callback in NewRemote._RemoteConnections do
+				callback(...)
+			end
+		end)
+	elseif object.ClassName == "RemoteFunction" then
+		local func = object::RemoteFunction
+
+		func.OnClientInvoke(function(...)
+			for _, callback in NewRemote._RemoteConnections do
+				callback(...)
+			end
+		end)
+	end
+
+	
 	return NewRemote
 end
 
@@ -88,7 +100,9 @@ function NetworkerAPI.new()
 	setmetatable(NetworkMethoder, NetworkerAPI)
 
 	NetworkMethoder.Methods = {}
-	print(NetworkMethoder)
+
+	if IsClient then
+		--Creates a shared table automatically
 
 	return NetworkMethoder
 end
@@ -99,6 +113,49 @@ function NetworkerAPI:AddEvent(Name, ToServer)
 	local RemoteClass = Remote.new(RemoteObject, ToServer)
 
 	self.Methods[Name] = RemoteClass
+
+	return RemoteClass
+end
+
+--Replicated Table Methods
+
+
+
+
+local function SetupTableRemote(Name)
+	local RemoteEvent
+	if IsClient then
+		RemoteEvent = RemotesFldr:WaitForChild("ReplicatedTableRemote")
+	else
+		RemoteEvent = Instance.new("RemoteEvent")
+		RemoteEvent.Name = "ReplicatedTableRemote"
+		RemoteEvent.Parent = RemotesFldr
+	end
+	local RemoteClass = Remote.new(RemoteEvent, not IsClient)
+
+	return RemoteClass
+end
+
+local UpdateRepTableValRemote = SetupTableRemote("UpdateRepTableValRemote")
+local AddRepTableValRemote = SetupTableRemote("AddRepTableValRemote")
+local SetRepTableRemote = SetupTableRemote("SetRepTableRemote")
+
+--Events/Remotes for Replicated Table
+UpdateRepTableValRemote:On(function()
+
+end)
+
+AddRepTableValRemote:On(function()
+
+end)
+
+SetRepTableRemote:On(function()
+
+end)
+
+if IsClient then
+
+	return NetworkerAPI
 end
 
 return NetworkerAPI

@@ -4,4 +4,6 @@ local ServerNetworker = NetworkerAPI.new()
 
 ServerNetworker:AddEvent("GetTest", false)
 
+local TestShared = {}
+
 return ServerNetworker.Methods
