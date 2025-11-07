@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RemotesFldr = ReplicatedStorage:WaitForChild("Remotes")
 local IsClient = game:GetService("RunService"):IsClient()
@@ -18,6 +19,21 @@ function ServerSender:FireAll(...)
 	self._object:FireAllClients(...)
 end
 
+function ServerSender:FireInclude(ClientList, ...)
+	for _, plr in ClientList do
+		self._object:Fire(plr, ...)
+	end
+end
+
+function ServerSender:FireExclude(ExcludeList, ...)
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if table.find(ExcludeList, plr) then
+			continue
+		end
+		self._object:Fire(plr, ...)
+	end
+end
+
 local Receiver = {}
 Receiver.__index = Receiver
 
@@ -28,7 +44,11 @@ end
 local Remote = {}
 Remote.__index = Remote
 
-function Remote.new(object: RemoteEvent, ToServer: boolean)
+type ParseList = {
+	[string]: (any) -> any,
+}
+
+function Remote.new(object: RemoteEvent, ToServer: boolean, ParseList: ParseList)
 	local NewRemote = {}
 
 	--Firing Methods
