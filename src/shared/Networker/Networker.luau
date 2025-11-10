@@ -117,11 +117,23 @@ function NetworkerAPI:AddEvent(Name, ToServer)
 	return RemoteClass
 end
 
+local ReplicatedTableConstructor = require(script.Parent.ReplicatedTable)
+
+local ReplicatedTables = {}
+
+--This method is reserve for the client for getting data
+function NetworkerAPI:GetReplicatedTable(Name:string)
+	local ReplicatedTable = ReplicatedTables[Name]
+
+	if not ReplicatedTable then
+		warn("No Replicated Table with Name:"..Name.." exists")
+		return
+	end
+
+	return ReplicatedTable
+end
+
 --Replicated Table Methods
-
-
-
-
 local function SetupTableRemote(Name)
 	local RemoteEvent
 	if IsClient then
@@ -152,10 +164,5 @@ end)
 SetRepTableRemote:On(function()
 
 end)
-
-if IsClient then
-
-	return NetworkerAPI
-end
 
 return NetworkerAPI
