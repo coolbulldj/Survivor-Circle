@@ -119,6 +119,7 @@ end
 
 local ReplicatedTableConstructor = require(script.Parent.ReplicatedTable)
 
+<<<<<<< HEAD
 local ReplicatedTables = {}
 
 --This method is reserve for the client for getting data
@@ -134,6 +135,23 @@ function NetworkerAPI:GetReplicatedTable(Name:string)
 end
 
 --Replicated Table Methods
+=======
+--Replicated Table Methods
+local ReplicatedTables = {}
+
+function NetworkerAPI:AddTable(Name:string)
+	local TableObject = ReplicatedTables[Name]
+
+	if not TableObject then
+		warn("Failed to find Replicated Table for Name:"..Name)
+		return
+	end	
+
+	return TableObject
+end
+
+
+>>>>>>> f7759a5aa4d675e8be9dd337c78e18fe9f6ee7f7
 local function SetupTableRemote(Name)
 	local RemoteEvent
 	if IsClient then
@@ -153,16 +171,49 @@ local AddRepTableValRemote = SetupTableRemote("AddRepTableValRemote")
 local SetRepTableRemote = SetupTableRemote("SetRepTableRemote")
 
 --Events/Remotes for Replicated Table
-UpdateRepTableValRemote:On(function()
+UpdateRepTableValRemote:On(function(Name, NewValue, TablePath)
+	local ReplicatedTable = ReplicatedTables[Name]
 
+	if not ReplicatedTable then
+		warn("Failed to Update Value in Replicated Table because can't find Table with Name:"..Name)
+		return
+	end
+
+	ReplicatedTable:UpdateValue(NewValue, TablePath)
 end)
 
-AddRepTableValRemote:On(function()
+AddRepTableValRemote:On(function(Name)
+	local ReplicatedTable = ReplicatedTables[Name]
 
+	if not ReplicatedTable then
+		--Create a new Table, if not found.
+		ReplicatedTable = ReplicatedTableConstructor.new(Value)
+
+		ReplicatedTables[Name] = ReplicatedTable
+		return
+	end
 end)
 
-SetRepTableRemote:On(function()
+SetRepTableRemote:On(function(Name, Value)
+	local ReplicatedTable = ReplicatedTables[Name]
 
+	if not ReplicatedTable then
+		--Create a new Table, if not found.
+		ReplicatedTable = ReplicatedTableConstructor.new(Value)
+
+		ReplicatedTables[Name] = ReplicatedTable
+		return
+	end
+
+	ReplicatedTable:SetTable(Value)
 end)
 
+<<<<<<< HEAD
+=======
+if IsClient then
+
+	return NetworkerAPI
+end
+
+>>>>>>> f7759a5aa4d675e8be9dd337c78e18fe9f6ee7f7
 return NetworkerAPI

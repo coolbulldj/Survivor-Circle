@@ -5,14 +5,23 @@ local DataParser = require(SharedFldr.DataParser)
 local ReplicatedTable = {}
 ReplicatedTable.__index = {}
 
-function ReplicatedTable.new()
+local function CallMethods(list, ...)
+	for _, callback in list do
+		callback(...)
+	end
+end
+
+function ReplicatedTable.new(Data)
 	local NewReplicatedTable = {}
 	setmetatable(NewReplicatedTable, ReplicatedTable)
 
-	NewReplicatedTable.Data = {}
+	NewReplicatedTable.Data = Data
 	NewReplicatedTable.MetaData = {}
 
 	NewReplicatedTable.MetaData.LastUpdated = os.time()
+	NewReplicatedTable.MetaData._UpdateValMethods = {}
+	NewReplicatedTable.MetaData._AddValMethods = {}
+	NewReplicatedTable.MetaData._SetValMethods = {}
 
 	return NewReplicatedTable
 end
@@ -27,11 +36,14 @@ function ReplicatedTable:UpdateValue(NewValue, TablePath: string)
 	local TableScope, IndexVal = DataParser.DecodeTablePath(self.Data, TablePath)
 
 	TableScope[IndexVal] = NewValue
-	return
+	
+	CallMethods(self.MetaData._UpdateValMethods, IndexVal, Value)
 end
 
 function ReplicatedTable:SetTable(Value)
 	self.Data = Value
+
+	CallMethods(self.MetaData._SetValMethods, Value)
 end
 
 function ReplicatedTable:AddValue(Key, Value, TablePath: string)
@@ -48,6 +60,21 @@ function ReplicatedTable:AddValue(Key, Value, TablePath: string)
 	end
 
 	TableScope[IndexVal][Key] = Value
+
+	CallMethods(self.MetaData._AddValMethods, Key, Value)
+end
+
+--Connect Methods
+function ReplicatedTable:OnAddValue(callback)
+	table.insert(self.MetaData._AddValMethods, callback)
+end
+
+function ReplicatedTable:OnSetTable(callback)
+	table.insert(self.MetaData._SetValMethods, callback)
+end
+
+function ReplicatedTable:OnUpdateValue(callback)
+	table.insert(self.MetaData._UpdateValMethods, callback)
 end
 
 return ReplicatedTable
