@@ -1,9 +1,10 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SharedFldr = ReplicatedStorage.Shared
 local DataParser = require(SharedFldr.DataParser)
 
 local ReplicatedTable = {}
-ReplicatedTable.__index = {}
+ReplicatedTable.__index = ReplicatedTable
 
 local function CallMethods(list, ...)
 	for _, callback in list do

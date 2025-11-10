@@ -50,7 +50,7 @@ type ParseList = {
 
 function Remote.new(object: RemoteEvent | RemoteFunction, ToServer: boolean, ParseList: ParseList?)
 	local NewRemote = {}
-
+	print(IsClient, ToServer)
 	--Firing Methods
 	if IsClient == ToServer then
 		--Means both values have to true or false, which means they fire in the right content,
@@ -99,9 +99,6 @@ function NetworkerAPI.new()
 
 	NetworkMethoder.Methods = {}
 
-	if IsClient then
-		--Creates a shared table automatically
-	end
 	return NetworkMethoder
 end
 
@@ -123,13 +120,13 @@ local ReplicatedTables = {}
 local function SetupTableRemote(Name)
 	local RemoteEvent
 	if IsClient then
-		RemoteEvent = RemotesFldr:WaitForChild("ReplicatedTableRemote")
+		RemoteEvent = RemotesFldr:WaitForChild(Name)
 	else
 		RemoteEvent = Instance.new("RemoteEvent")
-		RemoteEvent.Name = "ReplicatedTableRemote"
+		RemoteEvent.Name = Name
 		RemoteEvent.Parent = RemotesFldr
 	end
-	local RemoteClass = Remote.new(RemoteEvent, not IsClient)
+	local RemoteClass = Remote.new(RemoteEvent, false)
 
 	return RemoteClass
 end
@@ -163,6 +160,13 @@ function NetworkerAPI:CreateReplicatedTable(Name, Value, SpecificPlayer: Player?
 	if IsClient then
 		--The client doesn't write data so we don't fire data
 		return
+	end
+
+	if not SpecificPlayer then
+		--Must Add the table everytime a player joins
+		Players.PlayerAdded:Connect(function(a0: Player)
+			SetRepTableRemote(a0, ReplicatedTable.Data)
+		end)
 	end
 
 	ReplicatedTable:OnAddValue(function(...)
@@ -218,11 +222,13 @@ if IsClient then
 	end)
 
 	SetRepTableRemote:On(function(TableName, Value)
+		print("Setting value", Value)
 		local ReplicatedTable = ReplicatedTables[TableName]
 
 		if not ReplicatedTable then
 			--Create a new Table, if not found.
-			warn("Failed to find replict")
+			warn("Failed to Set Replicated table Value because can't find Table with Name:" .. TableName)
+			return
 		end
 
 		ReplicatedTable:SetTable(Value)
