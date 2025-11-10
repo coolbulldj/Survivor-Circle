@@ -117,9 +117,21 @@ function NetworkerAPI:AddEvent(Name, ToServer)
 	return RemoteClass
 end
 
+local ReplicatedTableConstructor = require(script.Parent.ReplicatedTable)
+
 --Replicated Table Methods
+local ReplicatedTables = {}
 
+function NetworkerAPI:AddTable(Name:string)
+	local TableObject = ReplicatedTables[Name]
 
+	if not TableObject then
+		warn("Failed to find Replicated Table for Name:"..Name)
+		return
+	end	
+
+	return TableObject
+end
 
 
 local function SetupTableRemote(Name)
@@ -141,16 +153,41 @@ local AddRepTableValRemote = SetupTableRemote("AddRepTableValRemote")
 local SetRepTableRemote = SetupTableRemote("SetRepTableRemote")
 
 --Events/Remotes for Replicated Table
-UpdateRepTableValRemote:On(function()
+UpdateRepTableValRemote:On(function(Name, NewValue, TablePath)
+	local ReplicatedTable = ReplicatedTables[Name]
 
+	if not ReplicatedTable then
+		warn("Failed to Update Value in Replicated Table because can't find Table with Name:"..Name)
+		return
+	end
+
+	ReplicatedTable:UpdateValue(NewValue, TablePath)
 end)
 
-AddRepTableValRemote:On(function()
+AddRepTableValRemote:On(function(Name)
+	local ReplicatedTable = ReplicatedTables[Name]
 
+	if not ReplicatedTable then
+		--Create a new Table, if not found.
+		ReplicatedTable = ReplicatedTableConstructor.new(Value)
+
+		ReplicatedTables[Name] = ReplicatedTable
+		return
+	end
 end)
 
-SetRepTableRemote:On(function()
+SetRepTableRemote:On(function(Name, Value)
+	local ReplicatedTable = ReplicatedTables[Name]
 
+	if not ReplicatedTable then
+		--Create a new Table, if not found.
+		ReplicatedTable = ReplicatedTableConstructor.new(Value)
+
+		ReplicatedTables[Name] = ReplicatedTable
+		return
+	end
+
+	ReplicatedTable:SetTable(Value)
 end)
 
 if IsClient then
