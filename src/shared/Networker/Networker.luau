@@ -48,8 +48,7 @@ type ParseList = {
 	[string]: (any) -> any,
 }
 
-function Remote.new(object: RemoteEvent|RemoteFunction, ToServer: boolean, ParseList: ParseList?)
-	
+function Remote.new(object: RemoteEvent | RemoteFunction, ToServer: boolean, ParseList: ParseList?)
 	local NewRemote = {}
 
 	--Firing Methods
@@ -72,14 +71,14 @@ function Remote.new(object: RemoteEvent|RemoteFunction, ToServer: boolean, Parse
 	setmetatable(NewRemote, Receiver)
 
 	if object.ClassName == "RemoteEvent" then
-		local event = object::RemoteEvent
+		local event = object :: RemoteEvent
 		event.OnClientEvent:Connect(function(...)
 			for _, callback in NewRemote._RemoteConnections do
 				callback(...)
 			end
 		end)
 	elseif object.ClassName == "RemoteFunction" then
-		local func = object::RemoteFunction
+		local func = object :: RemoteFunction
 
 		func.OnClientInvoke(function(...)
 			for _, callback in NewRemote._RemoteConnections do
@@ -88,7 +87,6 @@ function Remote.new(object: RemoteEvent|RemoteFunction, ToServer: boolean, Parse
 		end)
 	end
 
-	
 	return NewRemote
 end
 
@@ -103,7 +101,7 @@ function NetworkerAPI.new()
 
 	if IsClient then
 		--Creates a shared table automatically
-
+	end
 	return NetworkMethoder
 end
 
@@ -119,39 +117,9 @@ end
 
 local ReplicatedTableConstructor = require(script.Parent.ReplicatedTable)
 
-<<<<<<< HEAD
 local ReplicatedTables = {}
 
---This method is reserve for the client for getting data
-function NetworkerAPI:GetReplicatedTable(Name:string)
-	local ReplicatedTable = ReplicatedTables[Name]
-
-	if not ReplicatedTable then
-		warn("No Replicated Table with Name:"..Name.." exists")
-		return
-	end
-
-	return ReplicatedTable
-end
-
 --Replicated Table Methods
-=======
---Replicated Table Methods
-local ReplicatedTables = {}
-
-function NetworkerAPI:AddTable(Name:string)
-	local TableObject = ReplicatedTables[Name]
-
-	if not TableObject then
-		warn("Failed to find Replicated Table for Name:"..Name)
-		return
-	end	
-
-	return TableObject
-end
-
-
->>>>>>> f7759a5aa4d675e8be9dd337c78e18fe9f6ee7f7
 local function SetupTableRemote(Name)
 	local RemoteEvent
 	if IsClient then
@@ -170,50 +138,95 @@ local UpdateRepTableValRemote = SetupTableRemote("UpdateRepTableValRemote")
 local AddRepTableValRemote = SetupTableRemote("AddRepTableValRemote")
 local SetRepTableRemote = SetupTableRemote("SetRepTableRemote")
 
---Events/Remotes for Replicated Table
-UpdateRepTableValRemote:On(function(Name, NewValue, TablePath)
+--Add Replicated Table to Methods
+--[[
+function NetworkerAPI:AddReplicatedTable(Name: string)
 	local ReplicatedTable = ReplicatedTables[Name]
 
 	if not ReplicatedTable then
-		warn("Failed to Update Value in Replicated Table because can't find Table with Name:"..Name)
+		warn("No Replicated Table with Name:" .. Name .. " exists")
 		return
 	end
 
-	ReplicatedTable:UpdateValue(NewValue, TablePath)
-end)
+	return ReplicatedTable
+end
+--]]
 
-AddRepTableValRemote:On(function(Name)
-	local ReplicatedTable = ReplicatedTables[Name]
+function NetworkerAPI:CreateReplicatedTable(Name, Value, SpecificPlayer: Player?) --Reserved for Server, as this is an OOP method, Client Replicated Tables get created via a remote event
+	local ReplicatedTable = ReplicatedTableConstructor.new() :: typeof(ReplicatedTableConstructor)
 
-	if not ReplicatedTable then
-		--Create a new Table, if not found.
-		ReplicatedTable = ReplicatedTableConstructor.new(Value)
+	ReplicatedTables[Name] = ReplicatedTable
 
-		ReplicatedTables[Name] = ReplicatedTable
+	--Add Replicated Tables to Methods
+	self.Methods[Name] = ReplicatedTable
+
+	if IsClient then
+		--The client doesn't write data so we don't fire data
 		return
 	end
-end)
 
-SetRepTableRemote:On(function(Name, Value)
-	local ReplicatedTable = ReplicatedTables[Name]
+	ReplicatedTable:OnAddValue(function(...)
+		if SpecificPlayer then
+			UpdateRepTableValRemote:Fire(SpecificPlayer)
+			return
+		end
+		UpdateRepTableValRemote:FireAll(...)
+	end)
 
-	if not ReplicatedTable then
-		--Create a new Table, if not found.
-		ReplicatedTable = ReplicatedTableConstructor.new(Value)
+	ReplicatedTable:OnAddValue(function(...)
+		if SpecificPlayer then
+			AddRepTableValRemote:Fire(SpecificPlayer, ...)
+			return
+		end
+		AddRepTableValRemote:FireAll(...)
+	end)
 
-		ReplicatedTables[Name] = ReplicatedTable
-		return
-	end
+	ReplicatedTable:OnSetTable(function(...)
+		if SpecificPlayer then
+			SetRepTableRemote:Fire(SpecificPlayer, ...)
+			return
+		end
+		SetRepTableRemote:FireAll(...)
+	end)
 
 	ReplicatedTable:SetTable(Value)
-end)
-
-<<<<<<< HEAD
-=======
-if IsClient then
-
-	return NetworkerAPI
 end
 
->>>>>>> f7759a5aa4d675e8be9dd337c78e18fe9f6ee7f7
+if IsClient then
+	--Events/Remotes for Replicated Table
+	UpdateRepTableValRemote:On(function(TableName, NewValue, TablePath)
+		print("Updating Value")
+		local ReplicatedTable = ReplicatedTables[TableName]
+
+		if not ReplicatedTable then
+			warn("Failed to Update Value in Replicated Table because can't find Table with Name:" .. TableName)
+			return
+		end
+
+		ReplicatedTable:UpdateValue(NewValue, TablePath)
+	end)
+
+	AddRepTableValRemote:On(function(TableName, Key, Value, TablePath: string)
+		local ReplicatedTable = ReplicatedTables[TableName]
+
+		if not ReplicatedTable then
+			warn("Failed to Add Value in Replicated Table because can't find Table with Name:" .. TableName)
+			return
+		end
+
+		ReplicatedTable:AddValue(Key, Value, TablePath)
+	end)
+
+	SetRepTableRemote:On(function(TableName, Value)
+		local ReplicatedTable = ReplicatedTables[TableName]
+
+		if not ReplicatedTable then
+			--Create a new Table, if not found.
+			warn("Failed to find replict")
+		end
+
+		ReplicatedTable:SetTable(Value)
+	end)
+end
+
 return NetworkerAPI

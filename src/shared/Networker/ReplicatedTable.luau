@@ -11,11 +11,11 @@ local function CallMethods(list, ...)
 	end
 end
 
-function ReplicatedTable.new(Data)
+function ReplicatedTable.new()
 	local NewReplicatedTable = {}
 	setmetatable(NewReplicatedTable, ReplicatedTable)
 
-	NewReplicatedTable.Data = Data
+	NewReplicatedTable.Data = {}
 	NewReplicatedTable.MetaData = {}
 
 	NewReplicatedTable.MetaData.LastUpdated = os.time()
@@ -36,8 +36,8 @@ function ReplicatedTable:UpdateValue(NewValue, TablePath: string)
 	local TableScope, IndexVal = DataParser.DecodeTablePath(self.Data, TablePath)
 
 	TableScope[IndexVal] = NewValue
-	
-	CallMethods(self.MetaData._UpdateValMethods, IndexVal, Value)
+
+	CallMethods(self.MetaData._UpdateValMethods, IndexVal, NewValue)
 end
 
 function ReplicatedTable:SetTable(Value)
