@@ -1,0 +1,3 @@
+local DataManager = {}
+
+return DataManager

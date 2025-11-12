@@ -1,0 +1,8 @@
+[package]
+name = "matth/survivor-circle"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+profilestore = "vyon/profilestore@1.0.3"
