@@ -1,4 +1,4 @@
-local NetworkerAPI = require(script.Parent.Networker)
+local NetworkerAPI = require(script.Parent.NetworkerAPI)
 
 local ServerNetworker = NetworkerAPI.new()
 
